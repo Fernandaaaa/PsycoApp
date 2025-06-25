@@ -1,0 +1,8 @@
+{
+    "scripts": {
+        "start:dev": "concurrently \"powershell ./generate-config.ps1 && node backend_psicoapp/app.js\" \"cd frontend_psicoapp && npx expo start\""
+    },
+    "devDependencies": {
+        "concurrently": "^9.1.2"
+    }
+}

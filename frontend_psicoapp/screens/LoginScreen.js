@@ -1,105 +1,119 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, Alert, TouchableOpacity, ActivityIndicator } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage'; 
+import React, { useState, useContext } from "react";
+import { View, Alert, ScrollView, TouchableWithoutFeedback, Keyboard, KeyboardAvoidingView } from "react-native";
+import { Text, TextInput, Button, ActivityIndicator, Snackbar }from "react-native-paper";
+import { loginStyles } from '../styles/loginStyles';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { UserContext } from "../userContext";
+import { API_URL } from '../config';
 
-export default function LoginScreen({ navigation, setUser }) {
+export default function LoginScreen({ navigation }) {
+    const { setUser } = useContext(UserContext);
     const [email, setEmail] = useState('');
     const [senha, setSenha] = useState('');
-    const [loading, setLoading] = useState(false); 
+    const [loading, setLoading] = useState(false);
+    const [snackbarVisible, setSnackbarVisible] = useState(false);
+    const [snackbarMsg, setSnackbarMsg] = useState('');
 
-    const fazerLogin = async () => { 
-        setLoading(true); 
+    const logar = async () => {
+        if (!email || !senha) {
+            setSnackbarMsg('Preencha todos os campos');
+            setSnackbarVisible(true);
+            return;
+        }
 
+        setLoading(true);
         try {
-            let userData = null;
-            let userToken = 'mock-token-123'; 
-            if (email === 'admin@clinica.com' && senha === '123456') {
-                userData = { id: '1', nome: 'Administrador', tipo: 'admin', token: userToken };
-            } else if (email === 'psicologa@clinica.com' && senha === '123456') {
-                userData = { id: '2', nome: 'Dra. Psicóloga', tipo: 'psicologa', token: userToken };
-            } else if (email === 'paciente@clinica.com' && senha === '123456') {
-                userData = { id: '3', nome: 'Paciente', tipo: 'paciente', token: userToken };
-            }
+            const response = await fetch(`${API_URL}/auth/login`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ email, senha })
+            });
+            const data = await response.json();
 
-            if (userData) {
-                await AsyncStorage.setItem('userId', userData.id);
-                await AsyncStorage.setItem('userName', userData.nome);
-                await AsyncStorage.setItem('userType', userData.tipo);
-                await AsyncStorage.setItem('userToken', userData.token);
-                setUser(userData);
+            if (response.ok) {
+                await AsyncStorage.setItem('users', JSON.stringify(data.user));
+                setUser(data.user);
             } else {
-                Alert.alert('Erro', 'E-mail ou senha incorretos.');
+                setSnackbarMsg(data.message);
+                setSnackbarVisible(true);
             }
         } catch (error) {
-            console.error('Erro ao tentar fazer login:', error);
-            Alert.alert('Erro', 'Ocorreu um erro ao tentar fazer login. Tente novamente mais tarde.');
+            console.error('Erro: ', error);
         } finally {
             setLoading(false);
         }
     };
 
-    return (
-        <View style={styles.container}>
-            <Text style={styles.titulo}>Login</Text>
-            <TextInput
-                style={styles.input}
-                placeholder="E-mail"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address" 
-                autoCapitalize="none" 
-            />
-            <TextInput
-                style={styles.input}
-                placeholder="Senha"
-                secureTextEntry
-                value={senha}
-                onChangeText={setSenha}
-            />
-            {loading ? (
-                <ActivityIndicator size="large" color="#007BFF" />
-            ) : (
-                <Button title="Entrar" onPress={fazerLogin} />
-            )}
-            
-            <TouchableOpacity onPress={() => navigation.navigate('Cadastro')}>
-                <Text style={styles.link}>Registrar-se</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => Alert.alert('Recuperação de senha', 'Instruções enviadas por e-mail.')}>
-                <Text style={styles.link}>Esqueceu a senha?</Text>
-            </TouchableOpacity>
-        </View>
-    );
-}
 
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        justifyContent: 'center',
-        padding: 20,
-        backgroundColor: '#e6f0f2'
-    },
-    titulo: {
-        fontSize: 28, 
-        fontWeight: 'bold',
-        marginBottom: 30, 
-        textAlign: 'center', 
-        color: '#333'
-    },
-    input: {
-        backgroundColor: '#fff',
-        paddingHorizontal: 15, 
-        paddingVertical: 12, 
-        marginBottom: 15, 
-        borderRadius: 8, 
-        fontSize: 16, 
-        borderWidth: 1,
-        borderColor: '#ddd'
-    },
-    link: {
-        color: '#007BFF',
-        marginTop: 15, 
-        textAlign: 'center',
-        fontSize: 15
-    }
-});
+    return ( 
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}> 
+            <KeyboardAvoidingView behavior="height" style={loginStyles.container}> 
+                <ScrollView contentContainerStyle={loginStyles.contentContainer}> 
+                    <Text variant="headlineMedium" style={loginStyles.title}> 
+                        Login 
+                    </Text> 
+            
+                    <TextInput 
+                        label="E-mail" 
+                        value={email} 
+                        onChangeText={setEmail} 
+                        keyboardType="email-address" 
+                        autoCapitalize="none" 
+                        style={loginStyles.input} 
+                        mode="outlined" 
+                    /> 
+            
+                    <TextInput 
+                        label="Senha" 
+                        value={senha} 
+                        onChangeText={setSenha} 
+                        secureTextEntry 
+                        style={loginStyles.input} 
+                        mode="outlined" 
+                    /> 
+            
+                    {loading ? ( 
+                        <ActivityIndicator 
+                        animating={true} 
+                        size="large" 
+                        color="#6a0dad" 
+                        style={{ marginVertical: 20 }} 
+                        /> 
+                    ) : ( 
+                        <> 
+                            <Button 
+                                mode="contained" 
+                                onPress={logar} 
+                                style={loginStyles.button} 
+                                contentStyle={{ paddingVertical: 8 }} 
+                            > 
+                                Entrar 
+                            </Button> 
+                
+                            <Button 
+                                mode="outlined" 
+                                onPress={() => navigation.navigate("Cadastro")} 
+                                style={loginStyles.button} 
+                                contentStyle={{ paddingVertical: 8 }} 
+                            > 
+                                Cadastre-se 
+                            </Button> 
+                        </> 
+                    )} 
+            
+                    <Snackbar 
+                        visible={snackbarVisible} 
+                        onDismiss={() => setSnackbarVisible(false)} 
+                        duration={3000} 
+                        action={{ 
+                        label: "Fechar", 
+                        onPress: () => setSnackbarVisible(false), 
+                        }} 
+                    > 
+                        {snackbarMsg} 
+                    </Snackbar> 
+                </ScrollView> 
+            </KeyboardAvoidingView> 
+        </TouchableWithoutFeedback> 
+  ); 
+}

@@ -1,5 +1,5 @@
-const mongoose = require('mongoose');
-const Schema = mongoose.Schema;
+import { Schema as _Schema, model } from 'mongoose';
+const Schema = _Schema;
 const userSchema = new Schema({
     nome: {
         type: String,
@@ -22,13 +22,7 @@ const userSchema = new Schema({
         enum: ['paciente', 'psicologo'],
         default: 'paciente',
         required: true
-    },
-    dataNascimento: {
-        type: Date
-    },
-    
-}, {
-    timestamps: true
+    }
 });
 
-module.exports = mongoose.model('User', userSchema);
+export default model('User', userSchema);
